@@ -22,16 +22,16 @@ def _pack_str(t, s):
     return struct.pack("!HH{}ss".format(len(s)), t, len(s) + 5, s, '\x00')
 
 
-def send_value(plug_type, plug_inst, value):
+def send_value(plug_type, plug_inst, value, plugin="sensors", plugin_instance="0"):
     package = b""
     # Host
     package += _pack_str(0x0000, hostname)
     # Time
     package += struct.pack("!HHQ", 0x0001, 12, getntptime())
     # Plugin
-    package += _pack_str(0x0002, "sensors")
+    package += _pack_str(0x0002, plugin)
     # Plugin instance
-    package += _pack_str(0x0003, "0")
+    package += _pack_str(0x0003, plugin_instance)
     # Type
     package += _pack_str(0x0004, plug_type)
     # Type instance
