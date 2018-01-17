@@ -30,8 +30,10 @@ def send_value(plug_type, plug_inst, value, plugin="sensors", plugin_instance="0
     package += struct.pack("!HHQ", 0x0001, 12, getntptime())
     # Plugin
     package += _pack_str(0x0002, plugin)
-    # Plugin instance
-    package += _pack_str(0x0003, plugin_instance)
+    if plugin_instance:
+        # Plugin instance
+        # Some plugins do not have instances (like memory)
+        package += _pack_str(0x0003, plugin_instance)
     # Type
     package += _pack_str(0x0004, plug_type)
     # Type instance

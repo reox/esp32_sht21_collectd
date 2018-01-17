@@ -19,6 +19,10 @@ def send_df():
     collectd.send_value("df_complex", "used", (f_blocks - f_bavail) * f_bsize, plugin="df", plugin_instance="root")
     collectd.send_value("df_complex", "reserved", (f_bfree - f_bavail) * f_bsize, plugin="df", plugin_instance="root")
 
+def send_mem():
+    collectd.send_value("memory", "free", gc.mem_free(),  plugin="memory", plugin_instance=None)
+    collectd.send_value("memory", "used", gc.mem_alloc(),  plugin="memory", plugin_instance=None)
+
 
 def sensesend(tmr):
     hum = sens.get_humd()
@@ -29,6 +33,7 @@ def sensesend(tmr):
     collectd.send_value("voltage", "V_Bat", bat)
 
     send_df()
+    send_mem()
 
     print("Temperature: {} °C, Humidity: {} %RH, battery: {}".format(tem, hum, bat))
 
