@@ -8,12 +8,18 @@ i2c = machine.I2C(sda=machine.Pin(21), scl=machine.Pin(22), freq=400000)
 
 sens = sht21.SHT21(i2c)
 
+adc = machine.ADC(machine.Pin(35))
+
+
+
 def sensesend(tmr):
     hum = sens.get_humd()
     tem = sens.get_temp()
+    bat = (105 + 27) * 1.1 / (27 * 2**12) * adc.read()
     collectd.send_value("humidity", "Humidity", hum)
     collectd.send_value("temperature", "Temperature", tem)
-    print("Temperature: {} °C, Humidity {} %RH".format(tem, hum))
+    collectd.send_value("voltage", "V_Bat", bat)
+    print("Temperature: {} °C, Humidity: {} %RH, battery: {}".format(tem, hum, bat))
 
 timer = machine.Timer(4)
 
