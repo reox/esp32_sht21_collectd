@@ -1,7 +1,16 @@
 import network
 import config
+import time
+import machine
 
-sta_if = network.WLAN(network.STA_IF)
+led = machine.Pin(5, machine.Pin.OUT)
+led.value(1)
+
+for _ in range(5):
+    led.value(0)
+    time.sleep_ms(50)
+    led.value(1)
+    time.sleep_ms(50)
 
 
 import network

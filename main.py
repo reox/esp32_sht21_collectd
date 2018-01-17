@@ -12,6 +12,10 @@ sens = sht21.SHT21(i2c)
 adc = machine.ADC(machine.Pin(35))
 
 
+led = machine.Pin(5, machine.Pin.OUT)
+led.value(1)
+
+
 def send_df():
     f_bsize, f_frsize, f_blocks, f_bfree, f_bavail, f_files, f_ffree, f_favail, f_flag, f_namemax = uos.statvfs("/")
 
@@ -25,6 +29,9 @@ def send_mem():
 
 
 def sensesend(tmr):
+    # For debugging, blink the LED...
+    led.value(0)
+
     hum = sens.get_humd()
     tem = sens.get_temp()
     bat = (105 + 27) * 1.1 / (27 * 2**12) * adc.read()
@@ -36,6 +43,7 @@ def sensesend(tmr):
     send_mem()
 
     print("Temperature: {} °C, Humidity: {} %RH, battery: {}".format(tem, hum, bat))
+    led.value(1)
 
 timer = machine.Timer(4)
 
