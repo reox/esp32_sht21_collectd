@@ -22,7 +22,7 @@ def _pack_str(t, s):
     return struct.pack("!HH{}ss".format(len(s)), t, len(s) + 5, s, '\x00')
 
 
-def send_value(plug_type, plug_inst, value, plugin="sensors", plugin_instance="0"):
+def send_value(plug_type, plug_inst, value, plugin="sensors", plugin_instance=None):
     package = b""
     # Host
     package += _pack_str(0x0000, hostname)
