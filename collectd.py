@@ -54,6 +54,7 @@ def send_value(plug_type, plug_inst, value, plugin="sensors", plugin_instance="0
 if __name__ == "__main__":
     import time
     for i in range(100):
-        send_value("temperature", 23.222 + i)
+        # send_value("temperature", 23.222 + i)
+        send_value("pressure", "Pressure", 1005.2321 + i)
         time.sleep(2)
 

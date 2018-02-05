@@ -165,8 +165,8 @@ class BMP280:
         Compute the delay time in microseconds until the measurement is ready
         """
         return T_INIT_MAX + T_SETUP_PRESSURE_MAX + \
-               T_MEASURE_PER_OSRS_MAX * ((1 << self.mode_temperature) >> 1) + \
-               T_MEASURE_PER_OSRS_MAX * ((1 << self.mode_pressure) >> 1)
+               T_MEASURE_PER_OSRS_MAX * ((1 << self._mode_temperature) >> 1) + \
+               T_MEASURE_PER_OSRS_MAX * ((1 << self._mode_pressure) >> 1)
 
     def read_raw_data(self, result):
         """ Reads the raw (uncompensated) data from the sensor.
@@ -245,9 +245,4 @@ class BMP280:
         """ human readable values """
 
         t, p = self.read_compensated_data()
-
-        p = p // 256
-        pi = p // 100
-        pd = p - pi * 100
-
-        return ("{}C".format(t / 100), "{}.{:02d}hPa".format(pi, pd))
+        return t / 100, p / 25600

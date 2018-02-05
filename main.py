@@ -1,5 +1,6 @@
 import machine
 import sht21
+import bmp280
 import time
 import collectd
 import uos
@@ -8,6 +9,7 @@ import uos
 i2c = machine.I2C(sda=machine.Pin(21), scl=machine.Pin(22), freq=400000)
 
 sens = sht21.SHT21(i2c)
+bmp = bmp280.BMP280(i2c=i2c)
 
 adc = machine.ADC(machine.Pin(35))
 
@@ -34,15 +36,20 @@ def sensesend(tmr):
 
     hum = sens.get_humd()
     tem = sens.get_temp()
+
+    tem_bmp, pres_bmp = bmp.values
+
     bat = (105 + 27) * 1.1 / (27 * 2**12) * adc.read()
     collectd.send_value("humidity", "Humidity", hum)
     collectd.send_value("temperature", "Temperature", tem)
+    collectd.send_value("temperature", "Temperature BMP280", tem_bmp)
+    collectd.send_value("pressure", "Pressure statniv.", pres_bmp)
     collectd.send_value("voltage", "V_Bat", bat)
 
     send_df()
     send_mem()
 
-    print("Temperature: {} °C, Humidity: {} %RH, battery: {}".format(tem, hum, bat))
+    print("Temperature: {} / {} °C, Humidity: {} %RH, Air pressure: {}hPa, battery: {}".format(tem, tem_bmp, hum, pres_bmp, bat))
     led.value(1)
 
 timer = machine.Timer(4)
