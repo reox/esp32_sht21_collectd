@@ -4,6 +4,7 @@ import bmp280
 import time
 import collectd
 import uos
+import weather
 
 # Start up I2C
 i2c = machine.I2C(sda=machine.Pin(21), scl=machine.Pin(22), freq=400000)
@@ -44,6 +45,9 @@ def sensesend(tmr):
     collectd.send_value("temperature", "Temperature", tem)
     collectd.send_value("temperature", "Temperature BMP280", tem_bmp)
     collectd.send_value("pressure", "Pressure statniv.", pres_bmp)
+    # Actually this is quite wrong, when we use the indoor value...
+    # Weather measurements are hard ;)
+    collectd.send_value("pressure", "Pressure red.", weather.reduced_pressure(pres_bmp, tem_bmp, hum))
     collectd.send_value("voltage", "V_Bat", bat)
 
     send_df()
