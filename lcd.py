@@ -3,49 +3,62 @@
 # http://github.com/wjdp/micropython-lcd
 # http://wjdp.co.uk
 
-import pyb
+import machine
+import time
 
 class HD44780(object):
     # Pinout, change within or outside class for your use case
-    PINS = ['Y1','Y2','Y3','Y4','Y5','Y6']
+    PINS = [23, 19, 18, 4, 16, 17]
     # Pin names, don't change
     PIN_NAMES = ['RS','E','D4','D5','D6','D7']
 
-    # Dict of pins
-    pins = {}
-
     # Pin mode, push-pull control
-    PIN_MODE = pyb.Pin.OUT_PP
+    PIN_MODE = machine.Pin.OUT
 
     # Define some device constants
     LCD_WIDTH = 16    # Maximum characters per line
     # Designation of T/F for character and command modes
-    LCD_CHR = True
-    LCD_CMD = False
+    LCD_CHR = 1
+    LCD_CMD = 0
 
     LINES = {
+        # DDRAM_ADDRESS_CMD = 0x80
         0: 0x80, # LCD RAM address for the 1st line
-        1: 0xC0, # LCD RAM address for the 2nd line
+        1: 0xc0, # LCD RAM address for the 2nd line
         # Add more if desired
     }
 
     # Timing constants
-    E_PULSE = 50
+    E_PULSE = 1
     E_DELAY = 50
 
-    def init(self):
+    def __init__(self):
         # Initialise pins
         for pin, pin_name in zip(self.PINS, self.PIN_NAMES):
-            # setattr(self, 'LCD_'+pin_name,   # Unsupported
-            #     pyb.Pin(pin, self.PIN_MODE))
-            self.pins['LCD_'+pin_name] = pyb.Pin(pin, self.PIN_MODE)
-        # Initialise display
-        self.lcd_byte(0x33,self.LCD_CMD)
-        self.lcd_byte(0x32,self.LCD_CMD)
-        self.lcd_byte(0x28,self.LCD_CMD)
-        self.lcd_byte(0x0C,self.LCD_CMD)
-        self.lcd_byte(0x06,self.LCD_CMD)
-        self.lcd_byte(0x01,self.LCD_CMD)
+            setattr(self, 'LCD_'+pin_name, machine.Pin(pin, self.PIN_MODE))
+
+        self._lcd_nibble(0b0011, self.LCD_CMD)  # normal 8 bit..
+        self.udelay(38)
+
+        # Switch to 4 bit mode, set functions
+        self.lcd_byte(0b00101000, self.LCD_CMD)
+
+        # display control
+        self.lcd_byte(0b00001100, self.LCD_CMD)
+
+        # blank
+        self.lcd_byte(1, self.LCD_CMD)
+        self.udelay(1600)
+        # entry mode set
+        self.lcd_byte(0b00000110, self.LCD_CMD)
+        self.udelay(38)
+
+        self.lcd_byte(0xFF, self.LCD_CHR)
+        self.lcd_byte(0b00110000, self.LCD_CHR)
+        self.lcd_byte(0b00110001, self.LCD_CHR)
+
+        for x in range(0, 10):
+            self.lcd_byte(0b00110000 + x, self.LCD_CHR)
 
     def clear(self):
         # Clear the display
@@ -71,60 +84,28 @@ class HD44780(object):
     def lcd_byte(self, bits, mode):
         # Send byte to data pins
         # bits = data
+        # High nibble first
+        self._lcd_nibble(bits >> 4, mode)
+        # Then low nibble
+        self._lcd_nibble(bits, mode)
+
+    def _lcd_nibble(self, bits, mode):
         # mode = True  for character
         #        False for command
-
-        self.pin_action('LCD_RS', mode) # RS
-
-        # High bits
-        self.pin_action('LCD_D4', False)
-        self.pin_action('LCD_D5', False)
-        self.pin_action('LCD_D6', False)
-        self.pin_action('LCD_D7', False)
-        if bits&0x10==0x10:
-            self.pin_action('LCD_D4', True)
-        if bits&0x20==0x20:
-            self.pin_action('LCD_D5', True)
-        if bits&0x40==0x40:
-            self.pin_action('LCD_D6', True)
-        if bits&0x80==0x80:
-            self.pin_action('LCD_D7', True)
-
         # Toggle 'Enable' pin
-        self.udelay(self.E_DELAY)
-        self.pin_action('LCD_E', True)
-        self.udelay(self.E_PULSE)
-        self.pin_action('LCD_E', False)
-        self.udelay(self.E_DELAY)
+        self.LCD_E.value(0)
 
-        # Low bits
-        self.pin_action('LCD_D4', False)
-        self.pin_action('LCD_D5', False)
-        self.pin_action('LCD_D6', False)
-        self.pin_action('LCD_D7', False)
-        if bits&0x01==0x01:
-            self.pin_action('LCD_D4', True)
-        if bits&0x02==0x02:
-            self.pin_action('LCD_D5', True)
-        if bits&0x04==0x04:
-            self.pin_action('LCD_D6', True)
-        if bits&0x08==0x08:
-            self.pin_action('LCD_D7', True)
+        self.LCD_RS.value(mode)  # RS
+        self.LCD_D4.value(bits >> 0 & 1)
+        self.LCD_D5.value(bits >> 1 & 1)
+        self.LCD_D6.value(bits >> 2 & 1)
+        self.LCD_D7.value(bits >> 3 & 1)
 
-        # Toggle 'Enable' pin
-        self.udelay(self.E_DELAY)
-        self.pin_action('LCD_E', True)
+        self.LCD_E.value(1)
         self.udelay(self.E_PULSE)
-        self.pin_action('LCD_E', False)
+        self.LCD_E.value(0)
         self.udelay(self.E_DELAY)
 
     def udelay(self, us):
         # Delay by us microseconds, set as function for portability
-        pyb.udelay(us)
-
-    def pin_action(self, pin, high):
-        # Pin high/low functions, set as function for portability
-        if high:
-            self.pins[pin].high()
-        else:
-            self.pins[pin].low()
+        time.sleep_us(us)
