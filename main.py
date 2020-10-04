@@ -22,11 +22,20 @@ led.value(1)
 disp.init_display()
 disp.invert(False)
 disp.rotate(True)
+disp.fill(1)
+disp.show()
+time.sleep_ms(200)
 disp.fill(0)
 disp.show()
 
 send_adc = False
 send_collectd = False
+
+
+# The display has a height of 64 pixel
+# Chars are 8x8 and it does not require a pixel space between.
+LINES = {i + 1: i * 8 for i in range(8)}
+
 
 
 def send_df():
@@ -71,19 +80,50 @@ def sensesend(tmr):
 
     print("Temperature: {} / {} °C, Humidity: {} %RH, Air pressure: {}hPa, battery: {}".format(tem, tem_bmp, hum, pres_bmp, bat))
 
-    disp.fill(0)
-    disp.text("{:=6.1f} °C".format(tem), 8, 10, 1)
-    disp.text("{:=6.1f} %RH".format(hum), 8, 20, 1)
-    disp.text("{:=6.1f} hPa".format(pres_bmp), 8, 30, 1)
-
-    if sta_if.isconnected():
-        disp.text(sta_if.ifconfig()[0], 8, 56, 1)
-    else:
-        disp.text("WLAN NC", 8, 56, 1)
+    # Text in Framebuffer has size 8x8 per character and the coordinate is at the top left corner.
+    # Argument: s, x, y, [c] (color is 1 by default)
+    # The framebuf font in micropython is font_petme128_8x8.h.
+    # Unfortunately, it only supports chars between 0x20 (space) and 0x7f. ° is 0xb0
+    #
+    # 128x64 pixel --> 16x8 chars
+    disp.textline("{:=6.1f} C".format(tem), 0)
+    disp.textline("{:=6.1f} %RH".format(hum), 1)
+    disp.textline("{:=6.1f} hPa (st)".format(pres_bmp), 2)
+    disp.textline("{:=6.1f} hPa (rd)".format(weather.reduced_pressure(pres_bmp, tem_bmp, hum)), 3)
+    disp.textline("{:=6.1f} V".format(bat), 4)
     disp.show()
 
     led.value(1)
 
+
+WIFI_MESSAGE = {
+    network.STAT_IDLE:           "idle",
+    network.STAT_CONNECTING:     "connecting",
+    network.STAT_WRONG_PASSWORD: "wrong pw",
+    network.STAT_NO_AP_FOUND:    "no AP found",
+    network.STAT_GOT_IP:         "connected"
+}
+
+def wifistate(tmr):
+    if not sta_if.isconnected():
+        sta_if.active(True)
+        sta_if.connect(config.essid, config.passphrase)
+        print('network config:', sta_if.ifconfig())
+    state = sta_if.status()
+    if state not in WIFI_MESSAGE:
+        statestr = 'state {}'.format(state)
+    else:
+        statestr = WIFI_MESSAGE[state]
+    disp.textline(statestr, 6)
+    disp.textline(sta_if.ifconfig()[0], 7)
+    disp.show()
+
+
+sensesend(None)
 timer = machine.Timer(4)
 timer.init(period=10000, mode=machine.Timer.PERIODIC, callback=sensesend)
+
+wifistate(None)
+timer = machine.Timer(3)
+timer.init(period=60000, mode=machine.Timer.PERIODIC, callback=wifistate)
 

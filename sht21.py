@@ -17,10 +17,10 @@ class SHT21:
         self._command(self.cmd_reset)
 
     def get_temp(self):
-        return (-46.85 + 175.72 / 65536.0 * self._command(self.cmd_measure_temp))
+        return -46.85 + 175.72 * (self._command(self.cmd_measure_temp) / 2**16)
 
     def get_humd(self):
-        return (-6.0 + 125.0 / 65536.0 * self._command(self.cmd_measure_humd))
+        return -6.0 + 125.0 * (self._command(self.cmd_measure_humd) / 2**16)
 
     def _command(self, cmd):
         self.i2c.writeto(self.address, cmd)
@@ -30,5 +30,5 @@ class SHT21:
 
         buf = self.i2c.readfrom(self.address, 2)
 
-        return ((buf[0] << 8) | buf[1]) & 0xFFFC
+        return float(((buf[0] << 8) | buf[1]) & 0xFFFC)
 

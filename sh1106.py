@@ -86,6 +86,9 @@ _SET_PAGE_ADDRESS    = const(0xB0)
 
 
 class SH1106:
+    TEXT_WIDTH = 8
+    TEXT_HEIGHT = 8
+
     def __init__(self, width, height, external_vcc):
         self.width = width
         self.height = height
@@ -94,7 +97,8 @@ class SH1106:
         self.buffer = bytearray(self.pages * self.width)
         fb = framebuf.FrameBuffer(self.buffer, self.width, self.height, framebuf.MVLSB)
         self.framebuf = fb
-# set shortcuts for the methods of framebuf
+
+        # set shortcuts for the methods of framebuf
         self.fill = fb.fill
         self.fill_rect = fb.fill_rect
         self.hline = fb.hline
@@ -157,6 +161,12 @@ class SH1106:
             time.sleep_ms(20)
             res(1)
             time.sleep_ms(20)
+
+    def textline(self, s, l, c=1):
+        """Write a line of text with prior cleaning of the line (starts from zero)"""
+        self.fill_rect(0, self.TEXT_HEIGHT * l, self.width, self.TEXT_HEIGHT, 0)
+        self.text(s, 0, self.TEXT_HEIGHT * l, c)
+
 
 class SH1106_I2C(SH1106):
     def __init__(self, width, height, i2c, res=None, addr=0x3c, external_vcc=False):
